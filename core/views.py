@@ -22,7 +22,7 @@ def fazer_login(request):
         return JsonResponse({"erro": "Método não permitido. Utilize POST."}, status=405)
 
 @csrf_exempt
-def ver_postagens(request):
+def gerenciar_postagens(request):
     if request.method == 'GET':
         postagens_banco = Postagem.objects.all()
         postagens_filtradas = []
