@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.contrib.auth import authenticate
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from .models import Postagem, Usuario
+from .models import Postagem, Usuario, Comentario
 import json
 
 # Create your views here.
@@ -64,3 +64,20 @@ def gerenciar_usuarios(request, id):
             return JsonResponse({"erro": "Usuário não encontrado."}, status=404)
     else:
         return JsonResponse({"erro": "Método não permitido. Utilize GET."}, status=405)
+
+@csrf_exempt
+def gerenciar_comentarios(request):
+    if request.method == 'POST':
+        if request.body:
+            resposta = json.loads(request.body)
+            informacoes_comentario = {
+                "autor_id": resposta.get('autor'),
+                "post_original_id": resposta.get('post_original'),
+                "conteudo": resposta.get('conteudo'),
+            }
+            Comentario.objects.create(**informacoes_comentario)
+            return JsonResponse({"mensagem": "Comentário criada com sucesso!"}, status=200)
+        else:
+            return JsonResponse({"mensagem": "Insira informações válidas!"}, status=400)
+    else:
+        return JsonResponse({"erro": "Método não permitido. Utilize GET ou POST."}, status=405)
