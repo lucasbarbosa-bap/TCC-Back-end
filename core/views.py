@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.contrib.auth import authenticate
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from .models import Postagem
+from .models import Postagem, Usuario
 import json
 
 # Create your views here.
@@ -54,3 +54,13 @@ def gerenciar_postagens(request):
     
     else:
         return JsonResponse({"erro": "Método não permitido. Utilize GET ou POST."}, status=405)
+
+def gerenciar_usuarios(request, id):
+    if request.method == 'GET':
+        try:
+            usuario = Usuario.objects.get(id=id)
+            return JsonResponse({"mensagem": usuario.username}, status=200)
+        except Usuario.DoesNotExist:
+            return JsonResponse({"erro": "Usuário não encontrado."}, status=404)
+    else:
+        return JsonResponse({"erro": "Método não permitido. Utilize GET."}, status=405)
