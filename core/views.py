@@ -79,5 +79,19 @@ def gerenciar_comentarios(request):
             return JsonResponse({"mensagem": "Comentário criada com sucesso!"}, status=200)
         else:
             return JsonResponse({"mensagem": "Insira informações válidas!"}, status=400)
+        
+    elif request.method == 'GET':
+         comentarios_banco = Comentario.objects.all()
+         comentarios_filtrados = []
+         
+         for comentario in comentarios_banco:
+             comentarios_filtrados.append({
+                "autor": {"id": comentario.autor.id, "nome": comentario.autor.username},
+                "post_original": comentario.post_original.id,
+                "conteudo": comentario.conteudo,
+                "data_criacao": comentario.data_criacao,
+             })
+         return JsonResponse({"Comentarios": comentarios_filtrados}, status=200)
+    
     else:
         return JsonResponse({"erro": "Método não permitido. Utilize GET ou POST."}, status=405)
