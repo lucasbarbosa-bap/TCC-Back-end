@@ -17,6 +17,16 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
+from core.views import fazer_login
+#from core.views import postagens
+#from core.views import usuarios
+#from core.views import interacoes
+
+
 urlpatterns = [
     path('admin/', admin.site.urls),
+
+    path('api/auth/login/', fazer_login, name='api_login'),
+    #path('api/postagem/', Home.as_view(), name='api_postagem'),
+    #path('api/usuarios/<int:id>/', Home.as_view(), name='api_usuarios'),
 ]
