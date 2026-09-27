@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.contrib.auth import authenticate
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from .models import Postagem, Usuario, Comentario
+from .models import Postagem, Usuario, Comentario, Interacao
 import json
 
 # Create your views here.
@@ -93,5 +93,37 @@ def gerenciar_comentarios(request):
              })
          return JsonResponse({"Comentarios": comentarios_filtrados}, status=200)
     
+    else:
+        return JsonResponse({"erro": "Método não permitido. Utilize GET ou POST."}, status=405)
+
+@csrf_exempt
+def gerenciar_interacoes(request):
+    if request.method == 'POST':
+        if request.body:
+            resposta = json.loads(request.body)
+            informacoes_interacao = {
+                "autor_id": resposta.get('autor'),
+                "post_id": resposta.get('post'),
+                "comentario_id": resposta.get('comentario'),
+                "tipo": resposta.get('tipo'),
+            }
+            Interacao.objects.create(**informacoes_interacao)
+            return JsonResponse({"mensagem": "Interação criada com sucesso!"}, status=201)
+        else:
+            return JsonResponse({"mensagem": "Insira informações válidas!"}, status=400)
+        
+    elif request.method == 'GET':
+        Interacoes_banco = Interacao.objects.all()
+        Interacoes_filtradas = []
+
+        for interacao in Interacoes_banco:
+            Interacoes_filtradas.append({
+                "autor_id": interacao.autor_id,
+                "post_id": interacao.post_id,
+                "comentario_id": interacao.comentario_id,
+                "tipo": interacao.tipo,
+            })
+
+        return JsonResponse({"Interações": Interacoes_filtradas}, status=200)
     else:
         return JsonResponse({"erro": "Método não permitido. Utilize GET ou POST."}, status=405)
