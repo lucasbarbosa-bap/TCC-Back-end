@@ -37,6 +37,20 @@ def gerenciar_postagens(request):
 
             })
         return JsonResponse({"Postagens": postagens_filtradas}, status=200)
+    
+    elif request.method == 'POST':
+        if request.body:
+            resposta = json.loads(request.body)
+            informacoes_postagem = {
+                "titulo": resposta.get('titulo'),
+                "conteudo": resposta.get('conteudo'),
+                "autor_id": resposta.get('autor'),
+            }
+            Postagem.objects.create(**informacoes_postagem)
+            return JsonResponse({"mensagem": "Postagem criada com sucesso!"}, status=201)
+        else:
+            return JsonResponse({"mensagem": "Insira informações válidas!"}, status=400)
 
+    
     else:
-        return JsonResponse({"erro": "Método não permitido. Utilize GET."}, status=405)
+        return JsonResponse({"erro": "Método não permitido. Utilize GET ou POST."}, status=405)
