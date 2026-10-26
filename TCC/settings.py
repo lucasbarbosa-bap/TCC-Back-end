@@ -43,6 +43,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -129,3 +130,6 @@ MAILERS = {
 
 #Usar modelo personalizado de usuário
 AUTH_USER_MODEL = 'core.Usuario'
+
+#Onde os arquivos serão armazenados (para css no render)
+STATIC_ROOT = BASE_DIR / 'staticfiles'
