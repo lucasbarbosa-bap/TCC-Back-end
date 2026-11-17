@@ -23,7 +23,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
 
     path('api/auth/login/', fazer_login, name='api_login'),
-    path('api/registar/', gerenciar_interacoes, name='api_registro'),
+    path('api/registar/', fazer_cadastro, name='api_registro'),
     path('api/postagem/', gerenciar_postagens, name='api_postagem'),
     path('api/usuarios/<int:id>/', gerenciar_usuarios, name='api_usuarios'),
     path('api/comentario/', gerenciar_comentarios, name='api_comentario'),
