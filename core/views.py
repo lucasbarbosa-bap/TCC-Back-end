@@ -26,21 +26,21 @@ def fazer_login(request):
 def fazer_cadastro(request):
     if request.method == 'POST':
             if request.body:
-            dados = json.loads(request.body)
+                dados = json.loads(request.body)
 
-            username = dados.get('username')
-            email = dados.get('email')
-            password = dados.get('password')
+                username = dados.get('username')
+                email = dados.get('email')
+                password = dados.get('password')
 
-            if User.objects.filter(username=username).exists():
-                return JsonResponse({"erro": "Username ja existe!"}, status=400)
+                if User.objects.filter(username=username).exists():
+                    return JsonResponse({"erro": "Username ja existe!"}, status=400)
 
-            novo_usuario = User.objects.create_user(
-                username=username,
-                password=password,
-                email=email
-            )
-            return JsonResponse({"mensagem": "Usuario cadastrado com sucesso >~<", "id": novo_usuario.id}, status=201)
+                novo_usuario = User.objects.create_user(
+                    username=username,
+                    password=password,
+                    email=email
+                )
+                return JsonResponse({"mensagem": "Usuario cadastrado com sucesso >~<", "id": novo_usuario.id}, status=201)
             else:
                 return JsonResponse({"erro": "Sem corpo"})
     else:
