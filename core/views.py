@@ -22,6 +22,31 @@ def fazer_login(request):
         return JsonResponse({"erro": "Método não permitido. Utilize POST."}, status=405)
 
 @csrf_exempt
+
+def fazer_cadastro(request):
+    if request.method == 'POST':
+            if request.body:
+            dados = json.loads(request.body)
+
+            username = dados.get('username')
+            email = dados.get('email')
+            password = dados.get('password')
+
+            if User.objects.filter(username=username).exists():
+                return JsonResponse({"erro": "Username ja existe!"}, status=400)
+
+            novo_usuario = User.objects.create_user(
+                username=username,
+                password=password,
+                email=email
+            )
+            return JsonResponse({"mensagem": "Usuario cadastrado com sucesso >~<", "id": novo_usuario.id}, status=201)
+            else:
+                return JsonResponse({"erro": "Sem corpo"})
+    else:
+        return JsonResponse({"erro": "Método não permitido. Utilize POST."}, status=405)
+
+@csrf_exempt
 def gerenciar_postagens(request):
     if request.method == 'GET':
         postagens_banco = Postagem.objects.all()
