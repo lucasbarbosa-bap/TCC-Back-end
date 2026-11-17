@@ -1,12 +1,13 @@
 from django.shortcuts import render
-from django.contrib.auth import authenticate
-from django.contrib.auth.models import User
+from django.contrib.auth import authenticate, get_user_model
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from .models import Postagem, Usuario, Comentario, Interacao
 import json
 
 # Create your views here.
+
+User = get_user_model()
 
 @csrf_exempt #Tirar trava de formulário padrão do django
 
