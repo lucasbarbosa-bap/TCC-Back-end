@@ -92,18 +92,35 @@ def gerenciar_postagens(request):
                 "autor": {"id": postagem.autor.id, "nome": postagem.autor.username},
                 "data_criacao": postagem.data_criacao,
                 "conteudo": postagem.conteudo,
+                "midia": postagem.midia,
 
             })
         return JsonResponse({"Postagens": postagens_filtradas}, status=200)
     
     elif request.method == 'POST':
-        if request.body:
-            resposta = json.loads(request.body)
+        if request.POST:
             informacoes_postagem = {
-                "titulo": resposta.get('titulo'),
-                "conteudo": resposta.get('conteudo'),
-                "autor_id": resposta.get('autor'),
+                "titulo": request.POST.get('titulo'),
+                "conteudo": request.POST.get('conteudo'),
+                "autor_id": request.POST.get('autor'),
+                "midia": []
             }
+            if not informacoes_postagem["titulo"] or not informacoes_postagem["conteudo"]:
+                return JsonResponse({"erro": "campos insuficientes >.<"}, status=400)
+            arquivos = request.FILES.getlist('midia')
+            if  arquivos:
+                if len(arquivos) > 10:
+                    return JsonResponse({"erro": "Muitas mídias >O<"}, status=400)
+                midias = []
+
+                for arquivo in arquivos:
+                    midia, erro = upload_midia(arquivo, pasta="posts", aceita_video=True, tamanho_max_mb=20)
+                    if erro:
+                        return JsonResponse({"erro": erro}, status=400)
+                    midias.append(midia)
+
+                informacoes_postagem["midia"] = midias
+            
             Postagem.objects.create(**informacoes_postagem)
             return JsonResponse({"mensagem": "Postagem criada com sucesso!"}, status=201)
         else:
