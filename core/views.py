@@ -89,7 +89,7 @@ def gerenciar_postagens(request):
             postagens_filtradas.append({
                 "id": postagem.id,
                 "titulo": postagem.titulo,
-                "autor": {"id": postagem.autor.id, "nome": postagem.autor.username},
+                "autor": {"id": postagem.autor.id, "nome": postagem.autor.username, "avatar": postagem.autor.foto_perfil} if postagem.autor else None,
                 "data_criacao": postagem.data_criacao,
                 "conteudo": postagem.conteudo,
                 "midia": postagem.midia,
@@ -125,7 +125,6 @@ def gerenciar_postagens(request):
             return JsonResponse({"mensagem": "Postagem criada com sucesso!"}, status=201)
         else:
             return JsonResponse({"mensagem": "Insira informações válidas!"}, status=400)
-
     
     else:
         return JsonResponse({"erro": "Método não permitido. Utilize GET ou POST."}, status=405)
@@ -134,7 +133,7 @@ def gerenciar_usuarios(request, id):
     if request.method == 'GET':
         try:
             usuario = Usuario.objects.get(id=id)
-            return JsonResponse({"mensagem": usuario.username}, status=200)
+            return JsonResponse({"mensagem": {"username": usuario.username, "avatar": usuario.foto_perfil}}, status=200)
         except Usuario.DoesNotExist:
             return JsonResponse({"erro": "Usuário não encontrado."}, status=404)
     else:
@@ -143,15 +142,28 @@ def gerenciar_usuarios(request, id):
 @csrf_exempt
 def gerenciar_comentarios(request):
     if request.method == 'POST':
-        if request.body:
-            resposta = json.loads(request.body)
+        if request.POST:
             informacoes_comentario = {
-                "autor_id": resposta.get('autor'),
-                "post_original_id": resposta.get('post_original'),
-                "conteudo": resposta.get('conteudo'),
+                "autor_id": request.POST.get('autor'),
+                "post_original_id": request.POST.get('post_original'),
+                "conteudo": request.POST.get('conteudo'),
+                "midia": [],
             }
+            if not informacoes_comentario["conteudo"] or not informacoes_comentario["post_original_id"]:
+                return JsonResponse({"erro": "campos insuficientes >.<"}, status=400)
+            arquivos = request.FILES.getlist('midia')
+            if arquivos:
+                if len(arquivos) > 5:
+                    return JsonResponse({"erro": "Muitas mídias >O<"}, status=400)
+                midias = []
+                for arquivo in arquivos:
+                    midia, erro = upload_midia(arquivo, pasta="comentarios")
+                    if erro:
+                        return JsonResponse({"erro": erro}, status=400)
+                    midias.append(midia)
+                informacoes_comentario["midia"] = midias
             Comentario.objects.create(**informacoes_comentario)
-            return JsonResponse({"mensagem": "Comentário criada com sucesso!"}, status=200)
+            return JsonResponse({"mensagem": "Comentário criado com sucesso!"}, status=201)
         else:
             return JsonResponse({"mensagem": "Insira informações válidas!"}, status=400)
         
@@ -161,10 +173,12 @@ def gerenciar_comentarios(request):
          
          for comentario in comentarios_banco:
              comentarios_filtrados.append({
-                "autor": {"id": comentario.autor.id, "nome": comentario.autor.username},
+                "autor": {"id": comentario.autor.id, "nome": comentario.autor.username, "avatar": comentario.autor.foto_perfil} if comentario.autor else None,
+                "id": comentario.id,
                 "post_original": comentario.post_original.id,
                 "conteudo": comentario.conteudo,
                 "data_criacao": comentario.data_criacao,
+                "midia": comentario.midia,
              })
          return JsonResponse({"Comentarios": comentarios_filtrados}, status=200)
     
