@@ -2,7 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 class Usuario(AbstractUser):
-    foto_perfil = models.ImageField(upload_to='perfil/', blank=True, null=True)
+    foto_perfil = models.URLField(max_length=500, blank=True, null=True)
     biografia = models.CharField(max_length=500, blank=True)
     
     seguindo = models.ManyToManyField('self', symmetrical=False, related_name='seguidores', blank=True)
