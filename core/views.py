@@ -4,6 +4,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from .models import Postagem, Usuario, Comentario, Interacao
 import json
+import cloudinary.uploader
 
 # Create your views here.
 
@@ -27,24 +28,42 @@ def fazer_login(request):
 
 def fazer_cadastro(request):
     if request.method == 'POST':
-            if request.body:
-                dados = json.loads(request.body)
-
-                username = dados.get('username')
-                email = dados.get('email')
-                password = dados.get('password')
+            if request.POST:
+                username = request.POST.get('username')
+                email = request.POST.get('email')
+                password = request.POST.get('password')
+                avatar = ""
 
                 if User.objects.filter(username=username).exists():
                     return JsonResponse({"erro": "Username ja existe!"}, status=400)
+                if request.FILES.get('avatar'):
+                    arquivo = request.FILES.get('avatar')
+                    if arquivo.size > 5 * 1024 * 1024:
+                        return JsonResponse({"erro": "Arquivo grande demais >o<"}, status=400)
+                    if arquivo.content_type not in ['image/jpg', 'image/jpeg', 'image/png', 'image/gif', 'image/webp']:
+                        return JsonResponse({"erro": "Tipo de imagem inválida >~<"}, status=400)
+                    try:
+                        upload = cloudinary.uploader.upload(
+                        arquivo,
+                        folder="tcc/avatares",
+                        resource_type="image",
+                        transformation=[{"width": 500, "height": 500, "crop": "limit"}]
+                        )
+                        avatar = upload['secure_url']
+                    except Exception as e:
+                        print(f"Erro no upload do Cloudinary: {e}") #Para debug no console
+                        return JsonResponse({"erro": "Erro ao processar a imagem >~<"}, status=400)
+
 
                 novo_usuario = User.objects.create_user(
                     username=username,
                     password=password,
-                    email=email
+                    email=email,
+                    foto_perfil=avatar
                 )
                 return JsonResponse({"mensagem": "Usuario cadastrado com sucesso >~<", "id": novo_usuario.id}, status=201)
             else:
-                return JsonResponse({"erro": "Sem corpo"})
+                return JsonResponse({"erro": "Sem corpo"}, status=400)
     else:
         return JsonResponse({"erro": "Método não permitido. Utilize POST."}, status=405)
 
