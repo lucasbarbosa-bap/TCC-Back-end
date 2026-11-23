@@ -10,6 +10,31 @@ import cloudinary.uploader
 
 User = get_user_model()
 
+def upload_midia(arquivo, pasta, aceita_video=False, tamanho_max_mb=5, redimensionar=False):
+    if arquivo.size > tamanho_max_mb * 1024 * 1024:
+        return None, f"Arquivo grande demais (máximo {tamanho_max_mb}MB) >o<"
+    
+    tipos_permitidos = ['image/jpg', 'image/jpeg', 'image/png', 'image/gif', 'image/webp']
+    if aceita_video:
+        tipos_permitidos += ['video/mp4', 'video/webm', 'video/quicktime']
+
+    if arquivo.content_type not in tipos_permitidos:
+        return None, "Tipo de arquivo inválido >~<"
+    opcoes = {
+        "folder": f"tcc/{pasta}",
+        "resource_type": "auto" if aceita_video else "image"
+    }
+    if redimensionar:
+        opcoes["transformation"] = [{"width": 500, "height": 500, "crop": "limit"}]
+
+    try:
+        upload = cloudinary.uploader.upload(arquivo, **opcoes)
+        return upload['secure_url'], None
+    except Exception as e:
+        print(f"Erro no upload do Cloudinary: {e}") #Para debug no console
+        return None, "Erro ao processar a mídia >~<"
+
+
 @csrf_exempt #Tirar trava de formulário padrão do django
 
 def fazer_login(request):
@@ -38,22 +63,9 @@ def fazer_cadastro(request):
                     return JsonResponse({"erro": "Username ja existe!"}, status=400)
                 if request.FILES.get('avatar'):
                     arquivo = request.FILES.get('avatar')
-                    if arquivo.size > 5 * 1024 * 1024:
-                        return JsonResponse({"erro": "Arquivo grande demais >o<"}, status=400)
-                    if arquivo.content_type not in ['image/jpg', 'image/jpeg', 'image/png', 'image/gif', 'image/webp']:
-                        return JsonResponse({"erro": "Tipo de imagem inválida >~<"}, status=400)
-                    try:
-                        upload = cloudinary.uploader.upload(
-                        arquivo,
-                        folder="tcc/avatares",
-                        resource_type="image",
-                        transformation=[{"width": 500, "height": 500, "crop": "limit"}]
-                        )
-                        avatar = upload['secure_url']
-                    except Exception as e:
-                        print(f"Erro no upload do Cloudinary: {e}") #Para debug no console
-                        return JsonResponse({"erro": "Erro ao processar a imagem >~<"}, status=400)
-
+                    avatar, erro = upload_midia(arquivo, pasta="avatares", redimensionar=True)
+                    if erro:
+                        return JsonResponse({"erro": erro}, status=400)
 
                 novo_usuario = User.objects.create_user(
                     username=username,
