@@ -12,6 +12,13 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 
 from pathlib import Path
 import dj_database_url
+from dotenv import load_dotenv
+import cloudinary
+
+load_dotenv()
+
+#Garantir que só devolva links HTTPS
+cloudinary.config(secure=True)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -26,7 +33,7 @@ SECRET_KEY = 'django-insecure-&j+a$hib=a$im3@*6zq!60u$1$n+f7!lqlg#4jf5w(-a$b^6@r
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['tcc-back-end-1-j9p6.onrender.com']
+ALLOWED_HOSTS = ['tcc-back-end-1-j9p6.onrender.com', '127.0.0.1']
 
 
 # Application definition

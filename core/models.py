@@ -15,6 +15,7 @@ class Postagem(models.Model):
     autor = models.ForeignKey('Usuario', on_delete=models.SET_NULL, null=True)
     titulo = models.CharField(max_length=255)
     conteudo = models.TextField()
+    midia = models.JSONField(default=list, blank=True)
     data_criacao = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -25,6 +26,7 @@ class Comentario(models.Model):
     autor = models.ForeignKey('Usuario', on_delete=models.SET_NULL, null=True)
     post_original = models.ForeignKey('Postagem', on_delete=models.CASCADE)
     conteudo = models.TextField()
+    midia = models.JSONField(default=list, blank=True)
     data_criacao = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
