@@ -169,12 +169,17 @@ def gerenciar_usuarios(request, id):
         return JsonResponse({"erro": "Método não permitido. Utilize GET."}, status=405)
 
 @csrf_exempt
-def gerenciar_comentarios(request):
+def gerenciar_comentarios(request, id_post):
+    try:
+        post = Postagem.objects.get(id=id_post)
+    except Postagem.DoesNotExist:
+        return JsonResponse({"erro": "Post não encontrado."}, status=404)
+    
     if request.method == 'POST':
         if request.POST:
             informacoes_comentario = {
                 "autor_id": request.POST.get('autor'),
-                "post_original_id": request.POST.get('post_original'),
+                "post_original": post,
                 "conteudo": request.POST.get('conteudo'),
                 "midia": [],
             }
@@ -197,20 +202,23 @@ def gerenciar_comentarios(request):
             return JsonResponse({"mensagem": "Insira informações válidas!"}, status=400)
         
     elif request.method == 'GET':
-         comentarios_banco = Comentario.objects.all()
-         comentarios_filtrados = []
-         
-         for comentario in comentarios_banco:
-             comentarios_filtrados.append({
+        post = Postagem.objects.get(id=id_post)
+        comentarios_banco = Comentario.objects.filter(post_original=post).order_by('data_criacao')
+        comentarios_filtrados = []
+
+        for comentario in comentarios_banco:
+            comentarios_filtrados.append({
                 "autor": {"id": comentario.autor.id, "nome": comentario.autor.username, "avatar": comentario.autor.foto_perfil} if comentario.autor else None,
                 "id": comentario.id,
                 "post_original": comentario.post_original.id,
                 "conteudo": comentario.conteudo,
                 "data_criacao": comentario.data_criacao,
                 "midia": comentario.midia,
-             })
-         return JsonResponse({"Comentarios": comentarios_filtrados}, status=200)
-    
+                "curtidas": Interacao.objects.filter(comentario=comentario, tipo='like').count(),
+                "compartilhamentos": Interacao.objects.filter(comentario=comentario, tipo='share').count(),
+            })
+        return JsonResponse({"Comentarios": comentarios_filtrados}, status=200)
+
     else:
         return JsonResponse({"erro": "Método não permitido. Utilize GET ou POST."}, status=405)
 
