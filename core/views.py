@@ -39,10 +39,16 @@ def upload_midia(arquivo, pasta, aceita_video=False, tamanho_max_mb=5, redimensi
 
 def fazer_login(request):
     if request.method == 'POST':
-        resposta = json.loads(request.body)
-        autenticado = authenticate(username=resposta.get('username'), password=resposta.get('password'))
-        if autenticado:
-            return JsonResponse({"mensagem": "Login Feito UwU!"}, status=200)
+        dados = json.loads(request.body)
+        usuario = authenticate(username=dados.get('username'), password=dados.get('password'))
+        if usuario:
+            return JsonResponse({
+                "mensagem": "Login Feito UwU!", 
+                "id": usuario.id, 
+                "username": usuario.username, 
+                "avatar": usuario.foto_perfil, 
+                "biografia": usuario.biografia 
+                }, status=200)
         else:
             return JsonResponse({"mensagem": "Credenciais inválidas >_<!"}, status=401)
     
