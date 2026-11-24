@@ -88,7 +88,7 @@ def fazer_cadastro(request):
 @csrf_exempt
 def gerenciar_postagens(request):
     if request.method == 'GET':
-        postagens_banco = Postagem.objects.all()
+        postagens_banco = Postagem.objects.all().order_by('-data_criacao')
         postagens_filtradas = []
 
         for postagem in postagens_banco:
@@ -99,7 +99,9 @@ def gerenciar_postagens(request):
                 "data_criacao": postagem.data_criacao,
                 "conteudo": postagem.conteudo,
                 "midia": postagem.midia,
-
+                "curtidas": Interacao.objects.filter(post=postagem, tipo='like').count(),
+                "compartilhamentos": Interacao.objects.filter(post=postagem, tipo='share').count(),
+                "comentarios": Comentario.objects.filter(post_original=postagem).count()
             })
         return JsonResponse({"Postagens": postagens_filtradas}, status=200)
     
