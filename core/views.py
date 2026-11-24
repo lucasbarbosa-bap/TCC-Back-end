@@ -150,7 +150,10 @@ def gerenciar_usuarios(request, id):
                     "titulo": postagem.titulo,
                     "conteudo": postagem.conteudo,
                     "midia": postagem.midia,
-                    "data_criacao": postagem.data_criacao
+                    "data_criacao": postagem.data_criacao,
+                    "curtidas": Interacao.objects.filter(post=postagem, tipo='like').count(),
+                    "compartilhamentos": Interacao.objects.filter(post=postagem, tipo='share').count(),
+                    "comentarios": Comentario.objects.filter(post_original=postagem).count()
                 }
                 posts_usuario.append(postagem_filtrada)
 
