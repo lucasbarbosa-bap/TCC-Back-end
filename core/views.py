@@ -139,7 +139,28 @@ def gerenciar_usuarios(request, id):
     if request.method == 'GET':
         try:
             usuario = Usuario.objects.get(id=id)
-            return JsonResponse({"mensagem": {"username": usuario.username, "avatar": usuario.foto_perfil}}, status=200)
+            postagens_banco = Postagem.objects.filter(autor=usuario).order_by('-data_criacao')
+            posts_usuario= []
+
+            for postagem in postagens_banco:
+                postagem_filtrada = {
+                    "id": postagem.id,
+                    "titulo": postagem.titulo,
+                    "conteudo": postagem.conteudo,
+                    "midia": postagem.midia,
+                    "data_criacao": postagem.data_criacao
+                }
+                posts_usuario.append(postagem_filtrada)
+
+            return JsonResponse({"mensagem": {
+                "id": usuario.id,
+                "username": usuario.username, 
+                "avatar": usuario.foto_perfil, 
+                "biografia": usuario.biografia, 
+                "seguidores": usuario.seguidores.count(),
+                "seguindo": usuario.seguindo.count(),
+                "posts": posts_usuario
+                }}, status=200)
         except Usuario.DoesNotExist:
             return JsonResponse({"erro": "Usuário não encontrado."}, status=404)
     else:
