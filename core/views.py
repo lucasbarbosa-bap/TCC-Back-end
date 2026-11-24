@@ -183,7 +183,7 @@ def gerenciar_comentarios(request, id_post):
                 "conteudo": request.POST.get('conteudo'),
                 "midia": [],
             }
-            if not informacoes_comentario["conteudo"] or not informacoes_comentario["post_original_id"]:
+            if not informacoes_comentario["conteudo"]:
                 return JsonResponse({"erro": "campos insuficientes >.<"}, status=400)
             arquivos = request.FILES.getlist('midia')
             if arquivos:
@@ -202,7 +202,6 @@ def gerenciar_comentarios(request, id_post):
             return JsonResponse({"mensagem": "Insira informações válidas!"}, status=400)
         
     elif request.method == 'GET':
-        post = Postagem.objects.get(id=id_post)
         comentarios_banco = Comentario.objects.filter(post_original=post).order_by('data_criacao')
         comentarios_filtrados = []
 
