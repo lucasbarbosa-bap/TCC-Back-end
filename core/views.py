@@ -34,15 +34,29 @@ def upload_midia(arquivo, pasta, aceita_video=False, tamanho_max_mb=5, redimensi
         print(f"Erro no upload do Cloudinary: {e}") #Para debug no console
         return None, "Erro ao processar a mídia >~<"
 
+# Formatar as requisições PUT e PATCH
+def ler_dados_atualizacoes(request):
+    if request.content_type == 'multipart/form-data':
+        dados, arquivos = request.parse_file_upload(request.META, request)
+        return dados, arquivos
+    elif request.content_type == 'application/json' and request.body:
+        return json.loads(request.body), {}
+    return {}, {}
 
 @csrf_exempt #Tirar trava de formulário padrão do django
 
 def fazer_login(request):
     if request.method == 'POST':
-        resposta = json.loads(request.body)
-        autenticado = authenticate(username=resposta.get('username'), password=resposta.get('password'))
-        if autenticado:
-            return JsonResponse({"mensagem": "Login Feito UwU!"}, status=200)
+        dados = json.loads(request.body)
+        usuario = authenticate(username=dados.get('username'), password=dados.get('password'))
+        if usuario:
+            return JsonResponse({
+                "mensagem": "Login Feito UwU!", 
+                "id": usuario.id, 
+                "username": usuario.username, 
+                "avatar": usuario.foto_perfil, 
+                "biografia": usuario.biografia 
+                }, status=200)
         else:
             return JsonResponse({"mensagem": "Credenciais inválidas >_<!"}, status=401)
     
@@ -82,7 +96,7 @@ def fazer_cadastro(request):
 @csrf_exempt
 def gerenciar_postagens(request):
     if request.method == 'GET':
-        postagens_banco = Postagem.objects.all()
+        postagens_banco = Postagem.objects.all().order_by('-data_criacao')
         postagens_filtradas = []
 
         for postagem in postagens_banco:
@@ -93,7 +107,9 @@ def gerenciar_postagens(request):
                 "data_criacao": postagem.data_criacao,
                 "conteudo": postagem.conteudo,
                 "midia": postagem.midia,
-
+                "curtidas": Interacao.objects.filter(post=postagem, tipo='like').count(),
+                "compartilhamentos": Interacao.objects.filter(post=postagem, tipo='share').count(),
+                "comentarios": Comentario.objects.filter(post_original=postagem).count()
             })
         return JsonResponse({"Postagens": postagens_filtradas}, status=200)
     
@@ -129,27 +145,76 @@ def gerenciar_postagens(request):
     else:
         return JsonResponse({"erro": "Método não permitido. Utilize GET ou POST."}, status=405)
 
+@csrf_exempt
 def gerenciar_usuarios(request, id):
+    try:
+        usuario = Usuario.objects.get(id=id)
+    except Usuario.DoesNotExist:
+        return JsonResponse({"erro": "Usuário não encontrado."}, status=404)
+    
     if request.method == 'GET':
-        try:
-            usuario = Usuario.objects.get(id=id)
-            return JsonResponse({"mensagem": {"username": usuario.username, "avatar": usuario.foto_perfil}}, status=200)
-        except Usuario.DoesNotExist:
-            return JsonResponse({"erro": "Usuário não encontrado."}, status=404)
+            postagens_banco = Postagem.objects.filter(autor=usuario).order_by('-data_criacao')
+            posts_usuario= []
+
+            for postagem in postagens_banco:
+                postagem_filtrada = {
+                    "id": postagem.id,
+                    "titulo": postagem.titulo,
+                    "conteudo": postagem.conteudo,
+                    "midia": postagem.midia,
+                    "data_criacao": postagem.data_criacao,
+                    "curtidas": Interacao.objects.filter(post=postagem, tipo='like').count(),
+                    "compartilhamentos": Interacao.objects.filter(post=postagem, tipo='share').count(),
+                    "comentarios": Comentario.objects.filter(post_original=postagem).count()
+                }
+                posts_usuario.append(postagem_filtrada)
+
+            return JsonResponse({"mensagem": {
+                "id": usuario.id,
+                "username": usuario.username, 
+                "avatar": usuario.foto_perfil, 
+                "biografia": usuario.biografia, 
+                "seguidores": usuario.seguidores.count(),
+                "seguindo": usuario.seguindo.count(),
+                "posts": posts_usuario
+                }}, status=200)
+        
+    elif request.method == 'PUT' or request.method == 'PATCH':
+        dados, arquivo = ler_dados_atualizacoes(request)
+        if not dados and not arquivo:
+            return JsonResponse({"erro": "Envie os dados para atualiza!"}, status=400)
+        if dados.get('username'):
+             if Usuario.objects.filter(username=dados.get('username')).exclude(id=usuario.id).exists():
+                return JsonResponse({"erro": "Username já existe >x<!"}, status=400)
+             usuario.username = dados.get('username')
+        if arquivo.get('avatar'):
+            avatar, erro = upload_midia(arquivo.get('avatar'),  pasta="avatares", redimensionar=True)
+            if erro:
+                return JsonResponse({"erro": erro}, status=400)
+            usuario.foto_perfil = avatar
+        if dados.get('biografia') is not None:
+            usuario.biografia = dados.get('biografia')
+        usuario.save()
+        return JsonResponse({"mensagem": "Informações atualizadas com sucesso >o<!"}, status=200)
     else:
-        return JsonResponse({"erro": "Método não permitido. Utilize GET."}, status=405)
+        return JsonResponse({"erro": "Método não permitido. Utilize GET, PATCH OU PUT."}, status=405)
 
 @csrf_exempt
-def gerenciar_comentarios(request):
+def gerenciar_comentarios(request, id_post):
+    try:
+        post = Postagem.objects.get(id=id_post)
+    except Postagem.DoesNotExist:
+        return JsonResponse({"erro": "Post não encontrado."}, status=404)
+    
     if request.method == 'POST':
         if request.POST:
             informacoes_comentario = {
                 "autor_id": request.POST.get('autor'),
-                "post_original_id": request.POST.get('post_original'),
+                "post_original": post,
                 "conteudo": request.POST.get('conteudo'),
                 "midia": [],
             }
-            if not informacoes_comentario["conteudo"] or not informacoes_comentario["post_original_id"]:
+            if not informacoes_comentario["conteudo"]:
                 return JsonResponse({"erro": "campos insuficientes >.<"}, status=400)
             arquivos = request.FILES.getlist('midia')
             if arquivos:
@@ -168,20 +233,22 @@ def gerenciar_comentarios(request):
             return JsonResponse({"mensagem": "Insira informações válidas!"}, status=400)
         
     elif request.method == 'GET':
-         comentarios_banco = Comentario.objects.all()
-         comentarios_filtrados = []
-         
-         for comentario in comentarios_banco:
-             comentarios_filtrados.append({
+        comentarios_banco = Comentario.objects.filter(post_original=post).order_by('data_criacao')
+        comentarios_filtrados = []
+
+        for comentario in comentarios_banco:
+            comentarios_filtrados.append({
                 "autor": {"id": comentario.autor.id, "nome": comentario.autor.username, "avatar": comentario.autor.foto_perfil} if comentario.autor else None,
                 "id": comentario.id,
                 "post_original": comentario.post_original.id,
                 "conteudo": comentario.conteudo,
                 "data_criacao": comentario.data_criacao,
                 "midia": comentario.midia,
-             })
-         return JsonResponse({"Comentarios": comentarios_filtrados}, status=200)
-    
+                "curtidas": Interacao.objects.filter(comentario=comentario, tipo='like').count(),
+                "compartilhamentos": Interacao.objects.filter(comentario=comentario, tipo='share').count(),
+            })
+        return JsonResponse({"Comentarios": comentarios_filtrados}, status=200)
+
     else:
         return JsonResponse({"erro": "Método não permitido. Utilize GET ou POST."}, status=405)
 

@@ -26,6 +26,6 @@ urlpatterns = [
     path('api/registar/', fazer_cadastro, name='api_registro'),
     path('api/postagem/', gerenciar_postagens, name='api_postagem'),
     path('api/usuarios/<int:id>/', gerenciar_usuarios, name='api_usuarios'),
-    path('api/comentario/', gerenciar_comentarios, name='api_comentario'),
+    path('api/comentario/<int:id_post>/', gerenciar_comentarios, name='api_comentario'),
     path('api/interacao/', gerenciar_interacoes, name='api_interacao'),
 ]
