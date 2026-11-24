@@ -34,6 +34,14 @@ def upload_midia(arquivo, pasta, aceita_video=False, tamanho_max_mb=5, redimensi
         print(f"Erro no upload do Cloudinary: {e}") #Para debug no console
         return None, "Erro ao processar a mídia >~<"
 
+# Formatar as requisições PUT e PATCH
+def ler_dados_atualizacoes(request):
+    if request.content_type == 'multipart/form-data':
+        dados, arquivos = request.parse_file_upload(request.META, request)
+        return dados, arquivos
+    elif request.content_type == 'application/json' and request.body:
+        return json.loads(request.body), {}
+    return {}, {}
 
 @csrf_exempt #Tirar trava de formulário padrão do django
 
@@ -137,10 +145,14 @@ def gerenciar_postagens(request):
     else:
         return JsonResponse({"erro": "Método não permitido. Utilize GET ou POST."}, status=405)
 
+@csrf_exempt
 def gerenciar_usuarios(request, id):
+    try:
+        usuario = Usuario.objects.get(id=id)
+    except Usuario.DoesNotExist:
+        return JsonResponse({"erro": "Usuário não encontrado."}, status=404)
+    
     if request.method == 'GET':
-        try:
-            usuario = Usuario.objects.get(id=id)
             postagens_banco = Postagem.objects.filter(autor=usuario).order_by('-data_criacao')
             posts_usuario= []
 
@@ -166,10 +178,26 @@ def gerenciar_usuarios(request, id):
                 "seguindo": usuario.seguindo.count(),
                 "posts": posts_usuario
                 }}, status=200)
-        except Usuario.DoesNotExist:
-            return JsonResponse({"erro": "Usuário não encontrado."}, status=404)
+        
+    elif request.method == 'PUT' or request.method == 'PATCH':
+        dados, arquivo = ler_dados_atualizacoes(request)
+        if not dados and not arquivo:
+            return JsonResponse({"erro": "Envie os dados para atualiza!"}, status=400)
+        if dados.get('username'):
+             if Usuario.objects.filter(username=dados.get('username')).exclude(id=usuario.id).exists():
+                return JsonResponse({"erro": "Username já existe >x<!"}, status=400)
+             usuario.username = dados.get('username')
+        if arquivo.get('avatar'):
+            avatar, erro = upload_midia(arquivo.get('avatar'),  pasta="avatares", redimensionar=True)
+            if erro:
+                return JsonResponse({"erro": erro}, status=400)
+            usuario.foto_perfil = avatar
+        if dados.get('biografia') is not None:
+            usuario.biografia = dados.get('biografia')
+        usuario.save()
+        return JsonResponse({"mensagem": "Informações atualizadas com sucesso >o<!"}, status=200)
     else:
-        return JsonResponse({"erro": "Método não permitido. Utilize GET."}, status=405)
+        return JsonResponse({"erro": "Método não permitido. Utilize GET, PATCH OU PUT."}, status=405)
 
 @csrf_exempt
 def gerenciar_comentarios(request, id_post):
