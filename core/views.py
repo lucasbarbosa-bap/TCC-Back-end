@@ -165,6 +165,9 @@ def detalhar_postagem(request, id):
             }
         return JsonResponse({"Post": post_informacoes}, status=200)
 
+    elif request.method == 'DELETE':
+        post.delete()
+        return JsonResponse("mensagem": "Post deletado com sucesso!", status=200)
     else:
         return JsonResponse({"erro": "Método não permitido. Utilize GET."}, status=405)
 
