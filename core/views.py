@@ -146,6 +146,44 @@ def gerenciar_postagens(request):
         return JsonResponse({"erro": "Método não permitido. Utilize GET ou POST."}, status=405)
 
 @csrf_exempt
+def detalhar_postagem(request, id):
+    try:
+        post = Postagem.objects.get(id=id)
+    except Postagem.DoesNotExist:
+        return JsonResponse({"erro": "Post não encontrado."}, status=404)
+    if request.method == 'GET':
+        post_informacoes =  {
+                "id": post.id,
+                "titulo": post.titulo,
+                "autor": {"id": post.autor.id, "nome": post.autor.username, "avatar": post.autor.foto_perfil} if post.autor else None,
+                "data_criacao": post.data_criacao,
+                "conteudo": post.conteudo,
+                "midia": post.midia,
+                "curtidas": Interacao.objects.filter(post=post, tipo='like').count(),
+                "compartilhamentos": Interacao.objects.filter(post=post, tipo='share').count(),
+                "comentarios": Comentario.objects.filter(post_original=post).count()
+            }
+        return JsonResponse({"Post": post_informacoes}, status=200)
+
+    elif request.method == 'DELETE':
+        post.delete()
+        return JsonResponse({"mensagem": "Post deletado com sucesso!"}, status=200)
+
+    elif request.method == 'PUT' or request.method == 'PATCH':
+        dados, _arquivo = ler_dados_atualizacoes(request)
+        if not dados.get('titulo') and not dados.get('conteudo'):
+            return JsonResponse({"erro": "Informações insuficientes!"}, status=400)
+        
+        if dados.get('titulo'):
+            post.titulo = dados.get('titulo')
+        if dados.get('conteudo'):
+            post.conteudo = dados.get('conteudo')
+        post.save()
+        return JsonResponse({"mensagem": "informações atualizadas com sucesso."}, status=200)
+    else:
+        return JsonResponse({"erro": "Método não permitido. Utilize GET, DELETE ou PATCH."}, status=405)
+
+@csrf_exempt
 def gerenciar_usuarios(request, id):
     try:
         usuario = Usuario.objects.get(id=id)
@@ -196,6 +234,11 @@ def gerenciar_usuarios(request, id):
             usuario.biografia = dados.get('biografia')
         usuario.save()
         return JsonResponse({"mensagem": "Informações atualizadas com sucesso >o<!"}, status=200)
+    
+    elif request.method == 'DELETE':
+        usuario.delete()
+        return JsonResponse({"mensagem": "Usuário deletado com sucesso!"}, status=200)
+    
     else:
         return JsonResponse({"erro": "Método não permitido. Utilize GET, PATCH OU PUT."}, status=405)
 
