@@ -167,10 +167,21 @@ def detalhar_postagem(request, id):
 
     elif request.method == 'DELETE':
         post.delete()
-        return JsonResponse("mensagem": "Post deletado com sucesso!", status=200)
-    else:
-        return JsonResponse({"erro": "Método não permitido. Utilize GET."}, status=405)
+        return JsonResponse({"mensagem": "Post deletado com sucesso!"}, status=200)
 
+    elif request.method == 'PUT' or request.method == 'PATCH':
+        dados, _arquivo = ler_dados_atualizacoes(request)
+        if not dados.get('titulo') and not dados.get('conteudo'):
+            return JsonResponse({"erro": "Informações insuficientes!"}, status=400)
+        
+        if dados.get('titulo'):
+            post.titulo = dados.get('titulo')
+        if dados.get('conteudo'):
+            post.conteudo = dados.get('conteudo')
+        post.save()
+        return JsonResponse({"mensagem": "informações atualizadas com sucesso."}, status=200)
+    else:
+        return JsonResponse({"erro": "Método não permitido. Utilize GET, DELETE ou PATCH."}, status=405)
 
 @csrf_exempt
 def gerenciar_usuarios(request, id):
