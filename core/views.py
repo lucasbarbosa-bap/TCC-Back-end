@@ -196,6 +196,11 @@ def gerenciar_usuarios(request, id):
             usuario.biografia = dados.get('biografia')
         usuario.save()
         return JsonResponse({"mensagem": "Informações atualizadas com sucesso >o<!"}, status=200)
+    
+    elif request.method == 'DELETE':
+        usuario.delete()
+        return JsonResponse({"mensagem": "Usuário deletado com sucesso!"}, status=200)
+    
     else:
         return JsonResponse({"erro": "Método não permitido. Utilize GET, PATCH OU PUT."}, status=405)
 
