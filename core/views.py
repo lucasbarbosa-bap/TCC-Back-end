@@ -146,6 +146,30 @@ def gerenciar_postagens(request):
         return JsonResponse({"erro": "Método não permitido. Utilize GET ou POST."}, status=405)
 
 @csrf_exempt
+def detalhar_postagem(request, id):
+    try:
+        post = Postagem.objects.get(id=id)
+    except Postagem.DoesNotExist:
+        return JsonResponse({"erro": "Post não encontrado."}, status=404)
+    if request.method == 'GET':
+        post_informacoes =  {
+                "id": post.id,
+                "titulo": post.titulo,
+                "autor": {"id": post.autor.id, "nome": post.autor.username, "avatar": post.autor.foto_perfil} if post.autor else None,
+                "data_criacao": post.data_criacao,
+                "conteudo": post.conteudo,
+                "midia": post.midia,
+                "curtidas": Interacao.objects.filter(post=post, tipo='like').count(),
+                "compartilhamentos": Interacao.objects.filter(post=post, tipo='share').count(),
+                "comentarios": Comentario.objects.filter(post_original=post).count()
+            }
+        return JsonResponse({"Post": post_informacoes}, status=200)
+
+    else:
+        return JsonResponse({"erro": "Método não permitido. Utilize GET."}, status=405)
+
+
+@csrf_exempt
 def gerenciar_usuarios(request, id):
     try:
         usuario = Usuario.objects.get(id=id)
