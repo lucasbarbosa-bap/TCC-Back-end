@@ -314,9 +314,22 @@ def gerenciar_interacoes(request):
     elif request.method == 'GET':
         Interacoes_banco = Interacao.objects.all()
         Interacoes_filtradas = []
+        filtros = {}
+        if request.GET.get('post'):
+            filtros['post_id'] = request.GET.get('post')
 
-        for interacao in Interacoes_banco:
+        if request.GET.get('comentario'):
+            filtros['comentario_id'] = request.GET.get('comentario')
+
+        if request.GET.get('autor'):
+            filtros['autor_id'] = request.GET.get('autor')
+
+        if request.GET.get('tipo'):
+            filtros['tipo'] = request.GET.get('tipo')
+
+        for interacao in Interacoes_banco.filter(**filtros):
             Interacoes_filtradas.append({
+                "id": interacao.id,
                 "autor_id": interacao.autor_id,
                 "post_id": interacao.post_id,
                 "comentario_id": interacao.comentario_id,
