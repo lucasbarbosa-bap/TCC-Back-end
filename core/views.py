@@ -298,18 +298,31 @@ def gerenciar_comentarios(request, id_post):
 @csrf_exempt
 def gerenciar_interacoes(request):
     if request.method == 'POST':
-        if request.body:
-            resposta = json.loads(request.body)
-            informacoes_interacao = {
-                "autor_id": resposta.get('autor'),
-                "post_id": resposta.get('post'),
-                "comentario_id": resposta.get('comentario'),
-                "tipo": resposta.get('tipo'),
+        if not request.body:
+            return JsonResponse({"erro": "Insira informações válidas!"}, status=400)
+        resposta = json.loads(request.body)
+        informacoes_interacao = {
+            "autor_id": resposta.get('autor'),
+            "post_id": resposta.get('post'),
+            "comentario_id": resposta.get('comentario'),
+            "tipo": resposta.get('tipo'),
+        }
+
+        if Interacao.objects.filter(**informacoes_interacao).exists():
+            return JsonResponse({"erro": "Interação já registrada!"}, status=400)
+        
+        nova_interacao = Interacao.objects.create(**informacoes_interacao)
+        return JsonResponse({
+            "mensagem": "Interação criada com sucesso!",
+            "id": nova_interacao.id,
+            "interacao": {
+                "id": nova_interacao.id,
+                "autor_id": nova_interacao.autor_id,
+                "post_id": nova_interacao.post_id,
+                "comentario_id": nova_interacao.comentario_id,
+                "tipo": nova_interacao.tipo,
             }
-            Interacao.objects.create(**informacoes_interacao)
-            return JsonResponse({"mensagem": "Interação criada com sucesso!"}, status=201)
-        else:
-            return JsonResponse({"mensagem": "Insira informações válidas!"}, status=400)
+        }, status=201)
 
     elif request.method == 'GET':
         Interacoes_banco = Interacao.objects.all()
