@@ -17,7 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
-from core.views import fazer_login, gerenciar_postagens, gerenciar_usuarios, gerenciar_comentarios, gerenciar_interacoes, fazer_cadastro, detalhar_postagem
+from core.views import fazer_login, gerenciar_postagens, gerenciar_usuarios, gerenciar_comentarios, gerenciar_interacoes, fazer_cadastro, detalhar_postagem, detalhar_interacao
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -29,4 +29,5 @@ urlpatterns = [
     path('api/usuarios/<int:id>/', gerenciar_usuarios, name='api_usuarios'),
     path('api/comentario/<int:id_post>/', gerenciar_comentarios, name='api_comentario'),
     path('api/interacao/', gerenciar_interacoes, name='api_interacao'),
+    path('api/interacao/<int:id>/', detalhar_interacao, name='api_interacao_especifica')
 ]

@@ -310,13 +310,26 @@ def gerenciar_interacoes(request):
             return JsonResponse({"mensagem": "Interação criada com sucesso!"}, status=201)
         else:
             return JsonResponse({"mensagem": "Insira informações válidas!"}, status=400)
-        
+
     elif request.method == 'GET':
         Interacoes_banco = Interacao.objects.all()
         Interacoes_filtradas = []
+        filtros = {}
+        if request.GET.get('post'):
+            filtros['post_id'] = request.GET.get('post')
 
-        for interacao in Interacoes_banco:
+        if request.GET.get('comentario'):
+            filtros['comentario_id'] = request.GET.get('comentario')
+
+        if request.GET.get('autor'):
+            filtros['autor_id'] = request.GET.get('autor')
+
+        if request.GET.get('tipo'):
+            filtros['tipo'] = request.GET.get('tipo')
+
+        for interacao in Interacoes_banco.filter(**filtros):
             Interacoes_filtradas.append({
+                "id": interacao.id,
                 "autor_id": interacao.autor_id,
                 "post_id": interacao.post_id,
                 "comentario_id": interacao.comentario_id,
@@ -324,5 +337,18 @@ def gerenciar_interacoes(request):
             })
 
         return JsonResponse({"Interações": Interacoes_filtradas}, status=200)
+    
     else:
         return JsonResponse({"erro": "Método não permitido. Utilize GET ou POST."}, status=405)
+
+@csrf_exempt
+def detalhar_interacao(request, id):
+    try:
+        interacao = Interacao.objects.get(id=id)
+    except Interacao.DoesNotExist:
+        return JsonResponse({"erro": "A interação não existe!"}, status=404)
+    if request.method == 'DELETE':
+        interacao.delete()
+        return JsonResponse({"mensagem": "Interação apagada com sucesso."}, status=200)
+    else:
+        return JsonResponse({"erro": "Método não permitido. Utilize DELETE."}, status=405)

@@ -46,10 +46,13 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'core',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.common.CommonMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -140,3 +143,9 @@ AUTH_USER_MODEL = 'core.Usuario'
 
 #Onde os arquivos serão armazenados (para css no render)
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# Dominios permitidos pelo CORS
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "https://tcc-liart-six.vercel.app",
+]
