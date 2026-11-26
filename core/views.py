@@ -310,7 +310,7 @@ def gerenciar_interacoes(request):
             return JsonResponse({"mensagem": "Interação criada com sucesso!"}, status=201)
         else:
             return JsonResponse({"mensagem": "Insira informações válidas!"}, status=400)
-        
+
     elif request.method == 'GET':
         Interacoes_banco = Interacao.objects.all()
         Interacoes_filtradas = []
@@ -337,5 +337,18 @@ def gerenciar_interacoes(request):
             })
 
         return JsonResponse({"Interações": Interacoes_filtradas}, status=200)
+    
     else:
         return JsonResponse({"erro": "Método não permitido. Utilize GET ou POST."}, status=405)
+
+@csrf_exempt
+def detalhar_interacao(request, id):
+    try:
+        interacao = Interacao.objects.get(id=id)
+    except Interacao.DoesNotExist:
+        return JsonResponse({"erro": "A interação não existe!"}, status=404)
+    if request.method == 'DELETE':
+        interacao.delete()
+        return JsonResponse({"mensagem": "Interação apagada com sucesso."}, status=200)
+    else:
+        return JsonResponse({"erro": "Método não permitido. Utilize DELETE."}, status=405)
