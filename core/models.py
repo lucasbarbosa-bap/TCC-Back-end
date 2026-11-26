@@ -2,7 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 class Usuario(AbstractUser):
-    foto_perfil = models.ImageField(upload_to='perfil/', blank=True, null=True)
+    foto_perfil = models.URLField(max_length=500, blank=True, null=True)
     biografia = models.CharField(max_length=500, blank=True)
     
     seguindo = models.ManyToManyField('self', symmetrical=False, related_name='seguidores', blank=True)
@@ -15,6 +15,7 @@ class Postagem(models.Model):
     autor = models.ForeignKey('Usuario', on_delete=models.SET_NULL, null=True)
     titulo = models.CharField(max_length=255)
     conteudo = models.TextField()
+    midia = models.JSONField(default=list, blank=True)
     data_criacao = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -25,6 +26,7 @@ class Comentario(models.Model):
     autor = models.ForeignKey('Usuario', on_delete=models.SET_NULL, null=True)
     post_original = models.ForeignKey('Postagem', on_delete=models.CASCADE)
     conteudo = models.TextField()
+    midia = models.JSONField(default=list, blank=True)
     data_criacao = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
