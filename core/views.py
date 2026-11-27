@@ -412,3 +412,42 @@ def detalhar_interacao(request, id):
         return JsonResponse({"mensagem": "Interação apagada com sucesso."}, status=200)
     else:
         return JsonResponse({"erro": "Método não permitido. Utilize DELETE."}, status=405)
+
+
+@csrf_exempt
+def listar_seguidores(request, id):
+    if request.method == 'GET':
+        try:
+            usuario = Usuario.objects.get(id=id)
+        except Usuario.DoesNotExist:
+            return JsonResponse({"erro": "Usuário não encontrado."}, status=404)
+
+        dados = []
+        for seguidor in usuario.seguidores.all():
+            dados.append({
+                    "id": seguidor.id,
+                    "username": seguidor.username,
+                    "avatar": seguidor.foto_perfil,
+            })
+        return JsonResponse({"seguidores": dados}, status=200)
+    else:
+        return JsonResponse({"erro": "Método não permitido. Utilize GET."}, status=405)
+
+@csrf_exempt
+def listar_seguindo(request, id):
+    if request.method == 'GET':
+        try:
+            usuario = Usuario.objects.get(id=id)
+        except Usuario.DoesNotExist:
+            return JsonResponse({"erro": "Usuário não encontrado."}, status=404)
+        dados = []
+        for seguido in usuario.seguindo.all():
+            dados.append({
+                "id": seguido.id,
+                "username": seguido.username,
+                "avatar": seguido.foto_perfil,
+            })
+
+        return JsonResponse({"seguindo": dados,}, status=200)
+    else:
+        return JsonResponse({"erro": "Método não permitido. Utilize GET."}, status=405)
