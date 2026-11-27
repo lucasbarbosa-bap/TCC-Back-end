@@ -44,6 +44,16 @@ def ler_dados_atualizacoes(request):
         return json.loads(request.body), {}
     return {}, {}
 
+#Função para verificar tokens e se o usuário é o autor
+def verificar_permissao(request, autor_objeto=None):
+    usuario, erro = obter_usuario_logado(request)
+    if erro:
+       return (None, JsonResponse({"erro": erro}, status=401))
+    if autor_objeto is not None:
+        if autor_objeto != usuario:
+            return(None, JsonResponse({"erro": "Você não tem permissão para realizar esta ação."}, status=403))
+    return (usuario, None)
+
 @csrf_exempt #Tirar trava de formulário padrão do django
 
 def fazer_login(request):
@@ -173,14 +183,19 @@ def detalhar_postagem(request, id):
         return JsonResponse({"Post": post_informacoes}, status=200)
 
     elif request.method == 'DELETE':
+        usuario, erro = verificar_permissao(request, post.autor)
+        if erro:
+            return erro
         post.delete()
         return JsonResponse({"mensagem": "Post deletado com sucesso!"}, status=200)
 
     elif request.method == 'PUT' or request.method == 'PATCH':
+        usuario, erro = verificar_permissao(request, post.autor)
+        if erro:
+            return erro
         dados, _arquivo = ler_dados_atualizacoes(request)
         if not dados.get('titulo') and not dados.get('conteudo'):
             return JsonResponse({"erro": "Informações insuficientes!"}, status=400)
-        
         if dados.get('titulo'):
             post.titulo = dados.get('titulo')
         if dados.get('conteudo'):
