@@ -127,10 +127,9 @@ def gerenciar_postagens(request):
         return JsonResponse({"Postagens": postagens_filtradas}, status=200)
     
     elif request.method == 'POST':
-        usuario, erro = obter_usuario_logado(request)
+        usuario, erro = verificar_permissao(request, None)
         if erro:
-         return JsonResponse({"erro": erro}, status=401)
-    
+            return erro
         if request.POST:
             informacoes_postagem = {
                 "titulo": request.POST.get('titulo'),
