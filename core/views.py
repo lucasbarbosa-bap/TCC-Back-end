@@ -328,11 +328,14 @@ def gerenciar_comentarios(request, id_post):
 @csrf_exempt
 def gerenciar_interacoes(request):
     if request.method == 'POST':
+        usuario, erro = verificar_permissao(request, None)
+        if erro:
+            return erro
         if not request.body:
             return JsonResponse({"erro": "Insira informações válidas!"}, status=400)
         resposta = json.loads(request.body)
         informacoes_interacao = {
-            "autor_id": resposta.get('autor'),
+            "autor_id": usuario.id,
             "post_id": resposta.get('post'),
             "comentario_id": resposta.get('comentario'),
             "tipo": resposta.get('tipo'),
@@ -386,11 +389,14 @@ def gerenciar_interacoes(request):
 
 @csrf_exempt
 def detalhar_interacao(request, id):
-    try:
-        interacao = Interacao.objects.get(id=id)
-    except Interacao.DoesNotExist:
-        return JsonResponse({"erro": "A interação não existe!"}, status=404)
     if request.method == 'DELETE':
+        try:
+            interacao = Interacao.objects.get(id=id)
+        except Interacao.DoesNotExist:
+            return JsonResponse({"erro": "A interação não existe!"}, status=404)
+        usuario, erro = verificar_permissao(request, interacao.autor)
+        if erro:
+            return erro
         interacao.delete()
         return JsonResponse({"mensagem": "Interação apagada com sucesso."}, status=200)
     else:
