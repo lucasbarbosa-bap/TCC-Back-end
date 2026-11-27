@@ -5,6 +5,7 @@ from django.views.decorators.csrf import csrf_exempt
 from .models import Postagem, Usuario, Comentario, Interacao
 import json
 import cloudinary.uploader
+from core.auth import gerar_token, obter_usuario_logado
 
 # Create your views here.
 
@@ -43,6 +44,16 @@ def ler_dados_atualizacoes(request):
         return json.loads(request.body), {}
     return {}, {}
 
+#Função para verificar tokens e se o usuário é o autor
+def verificar_permissao(request, autor_objeto=None):
+    usuario, erro = obter_usuario_logado(request)
+    if erro:
+       return (None, JsonResponse({"erro": erro}, status=401))
+    if autor_objeto is not None:
+        if autor_objeto != usuario:
+            return(None, JsonResponse({"erro": "Você não tem permissão para realizar esta ação."}, status=403))
+    return (usuario, None)
+
 @csrf_exempt #Tirar trava de formulário padrão do django
 
 def fazer_login(request):
@@ -50,12 +61,14 @@ def fazer_login(request):
         dados = json.loads(request.body)
         usuario = authenticate(username=dados.get('username'), password=dados.get('password'))
         if usuario:
+            token = gerar_token(usuario)
             return JsonResponse({
                 "mensagem": "Login Feito UwU!", 
                 "id": usuario.id, 
                 "username": usuario.username, 
                 "avatar": usuario.foto_perfil, 
-                "biografia": usuario.biografia 
+                "biografia": usuario.biografia,
+                "token": token
                 }, status=200)
         else:
             return JsonResponse({"mensagem": "Credenciais inválidas >_<!"}, status=401)
@@ -114,11 +127,14 @@ def gerenciar_postagens(request):
         return JsonResponse({"Postagens": postagens_filtradas}, status=200)
     
     elif request.method == 'POST':
+        usuario, erro = verificar_permissao(request, None)
+        if erro:
+            return erro
         if request.POST:
             informacoes_postagem = {
                 "titulo": request.POST.get('titulo'),
                 "conteudo": request.POST.get('conteudo'),
-                "autor_id": request.POST.get('autor'),
+                "autor_id": usuario.id,
                 "midia": []
             }
             if not informacoes_postagem["titulo"] or not informacoes_postagem["conteudo"]:
@@ -166,14 +182,19 @@ def detalhar_postagem(request, id):
         return JsonResponse({"Post": post_informacoes}, status=200)
 
     elif request.method == 'DELETE':
+        usuario, erro = verificar_permissao(request, post.autor)
+        if erro:
+            return erro
         post.delete()
         return JsonResponse({"mensagem": "Post deletado com sucesso!"}, status=200)
 
     elif request.method == 'PUT' or request.method == 'PATCH':
+        usuario, erro = verificar_permissao(request, post.autor)
+        if erro:
+            return erro
         dados, _arquivo = ler_dados_atualizacoes(request)
         if not dados.get('titulo') and not dados.get('conteudo'):
             return JsonResponse({"erro": "Informações insuficientes!"}, status=400)
-        
         if dados.get('titulo'):
             post.titulo = dados.get('titulo')
         if dados.get('conteudo'):
@@ -218,6 +239,9 @@ def gerenciar_usuarios(request, id):
                 }}, status=200)
         
     elif request.method == 'PUT' or request.method == 'PATCH':
+        _usuario_logado, erro = verificar_permissao(request, usuario)
+        if erro:
+            return erro
         dados, arquivo = ler_dados_atualizacoes(request)
         if not dados and not arquivo:
             return JsonResponse({"erro": "Envie os dados para atualiza!"}, status=400)
@@ -236,6 +260,9 @@ def gerenciar_usuarios(request, id):
         return JsonResponse({"mensagem": "Informações atualizadas com sucesso >o<!"}, status=200)
     
     elif request.method == 'DELETE':
+        _usuario_logado, erro = verificar_permissao(request, usuario)
+        if erro:
+            return erro
         usuario.delete()
         return JsonResponse({"mensagem": "Usuário deletado com sucesso!"}, status=200)
     
@@ -250,9 +277,12 @@ def gerenciar_comentarios(request, id_post):
         return JsonResponse({"erro": "Post não encontrado."}, status=404)
     
     if request.method == 'POST':
+        usuario, erro = verificar_permissao(request, None)
+        if erro:
+            return erro
         if request.POST:
             informacoes_comentario = {
-                "autor_id": request.POST.get('autor'),
+                "autor_id": usuario.id,
                 "post_original": post,
                 "conteudo": request.POST.get('conteudo'),
                 "midia": [],
@@ -298,18 +328,45 @@ def gerenciar_comentarios(request, id_post):
 @csrf_exempt
 def gerenciar_interacoes(request):
     if request.method == 'POST':
-        if request.body:
-            resposta = json.loads(request.body)
-            informacoes_interacao = {
-                "autor_id": resposta.get('autor'),
-                "post_id": resposta.get('post'),
-                "comentario_id": resposta.get('comentario'),
-                "tipo": resposta.get('tipo'),
+        usuario, erro = verificar_permissao(request, None)
+        if erro:
+            return erro
+        if not request.body:
+            return JsonResponse({"erro": "Insira informações válidas!"}, status=400)
+        resposta = json.loads(request.body)
+        tipo = resposta.get('tipo')
+        post_id = resposta.get('post')
+        comentario_id = resposta.get('comentario')
+
+        if not tipo or (not post_id and not comentario_id):
+            return JsonResponse({"erro": "Informe o tipo e o post ou comentário!"}, status=400)
+        
+        informacoes_interacao = {
+            "autor_id": usuario.id,
+            "post_id": post_id,
+            "comentario_id": comentario_id,
+            "tipo": tipo,
+        }
+
+        if Interacao.objects.filter(**informacoes_interacao).exists():
+            return JsonResponse({"erro": "Interação já registrada!"}, status=400)
+        
+        try:
+            nova_interacao = Interacao.objects.create(**informacoes_interacao)
+        except Exception:
+            return JsonResponse({"erro": "Post ou comentário não encontrado!"}, status=400)
+        
+        return JsonResponse({
+            "mensagem": "Interação criada com sucesso!",
+            "id": nova_interacao.id,
+            "interacao": {
+                "id": nova_interacao.id,
+                "autor_id": nova_interacao.autor_id,
+                "post_id": nova_interacao.post_id,
+                "comentario_id": nova_interacao.comentario_id,
+                "tipo": nova_interacao.tipo,
             }
-            Interacao.objects.create(**informacoes_interacao)
-            return JsonResponse({"mensagem": "Interação criada com sucesso!"}, status=201)
-        else:
-            return JsonResponse({"mensagem": "Insira informações válidas!"}, status=400)
+        }, status=201)
 
     elif request.method == 'GET':
         Interacoes_banco = Interacao.objects.all()
@@ -343,11 +400,14 @@ def gerenciar_interacoes(request):
 
 @csrf_exempt
 def detalhar_interacao(request, id):
-    try:
-        interacao = Interacao.objects.get(id=id)
-    except Interacao.DoesNotExist:
-        return JsonResponse({"erro": "A interação não existe!"}, status=404)
     if request.method == 'DELETE':
+        try:
+            interacao = Interacao.objects.get(id=id)
+        except Interacao.DoesNotExist:
+            return JsonResponse({"erro": "A interação não existe!"}, status=404)
+        usuario, erro = verificar_permissao(request, interacao.autor)
+        if erro:
+            return erro
         interacao.delete()
         return JsonResponse({"mensagem": "Interação apagada com sucesso."}, status=200)
     else:
