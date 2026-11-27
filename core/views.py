@@ -60,8 +60,8 @@ def fazer_login(request):
     if request.method == 'POST':
         dados = json.loads(request.body)
         usuario = authenticate(username=dados.get('username'), password=dados.get('password'))
-        token = gerar_token(usuario)
         if usuario:
+            token = gerar_token(usuario)
             return JsonResponse({
                 "mensagem": "Login Feito UwU!", 
                 "id": usuario.id, 
