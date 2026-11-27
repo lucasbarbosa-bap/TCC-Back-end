@@ -15,7 +15,7 @@ def upload_midia(arquivo, pasta, aceita_video=False, tamanho_max_mb=5, redimensi
     if arquivo.size > tamanho_max_mb * 1024 * 1024:
         return None, f"Arquivo grande demais (máximo {tamanho_max_mb}MB) >o<"
     
-    tipos_permitidos = ['image/jpg', 'image/jpeg', 'image/png', 'image/gif', 'image/webp']
+    tipos_permitidos = ['image/jpg', 'image/jpeg', 'image/pjpeg', 'image/jfif', 'image/png', 'image/gif', 'image/webp']
     if aceita_video:
         tipos_permitidos += ['video/mp4', 'video/webm', 'video/quicktime']
 
