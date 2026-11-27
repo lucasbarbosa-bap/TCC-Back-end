@@ -239,6 +239,9 @@ def gerenciar_usuarios(request, id):
                 }}, status=200)
         
     elif request.method == 'PUT' or request.method == 'PATCH':
+        _usuario_logado, erro = verificar_permissao(request, usuario)
+        if erro:
+            return erro
         dados, arquivo = ler_dados_atualizacoes(request)
         if not dados and not arquivo:
             return JsonResponse({"erro": "Envie os dados para atualiza!"}, status=400)
@@ -257,6 +260,9 @@ def gerenciar_usuarios(request, id):
         return JsonResponse({"mensagem": "Informações atualizadas com sucesso >o<!"}, status=200)
     
     elif request.method == 'DELETE':
+        _usuario_logado, erro = verificar_permissao(request, usuario)
+        if erro:
+            return erro
         usuario.delete()
         return JsonResponse({"mensagem": "Usuário deletado com sucesso!"}, status=200)
     
