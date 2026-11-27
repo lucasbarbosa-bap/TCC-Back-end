@@ -277,9 +277,12 @@ def gerenciar_comentarios(request, id_post):
         return JsonResponse({"erro": "Post não encontrado."}, status=404)
     
     if request.method == 'POST':
+        usuario, erro = verificar_permissao(request, None)
+        if erro:
+            return erro
         if request.POST:
             informacoes_comentario = {
-                "autor_id": request.POST.get('autor'),
+                "autor_id": usuario.id,
                 "post_original": post,
                 "conteudo": request.POST.get('conteudo'),
                 "midia": [],
