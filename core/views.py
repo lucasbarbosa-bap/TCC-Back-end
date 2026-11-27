@@ -334,17 +334,28 @@ def gerenciar_interacoes(request):
         if not request.body:
             return JsonResponse({"erro": "Insira informações válidas!"}, status=400)
         resposta = json.loads(request.body)
+        tipo = resposta.get('tipo')
+        post_id = resposta.get('post')
+        comentario_id = resposta.get('comentario')
+
+        if not tipo or (not post_id and not comentario_id):
+            return JsonResponse({"erro": "Informe o tipo e o post ou comentário!"}, status=400)
+        
         informacoes_interacao = {
             "autor_id": usuario.id,
-            "post_id": resposta.get('post'),
-            "comentario_id": resposta.get('comentario'),
-            "tipo": resposta.get('tipo'),
+            "post_id": post_id,
+            "comentario_id": comentario_id,
+            "tipo": tipo,
         }
 
         if Interacao.objects.filter(**informacoes_interacao).exists():
             return JsonResponse({"erro": "Interação já registrada!"}, status=400)
         
-        nova_interacao = Interacao.objects.create(**informacoes_interacao)
+        try:
+            nova_interacao = Interacao.objects.create(**informacoes_interacao)
+        except Exception:
+            return JsonResponse({"erro": "Post ou comentário não encontrado!"}, status=400)
+        
         return JsonResponse({
             "mensagem": "Interação criada com sucesso!",
             "id": nova_interacao.id,
