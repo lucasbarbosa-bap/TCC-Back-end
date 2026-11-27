@@ -5,6 +5,7 @@ from django.views.decorators.csrf import csrf_exempt
 from .models import Postagem, Usuario, Comentario, Interacao
 import json
 import cloudinary.uploader
+from core.auth import gerar_token, obter_usuario_logado
 
 # Create your views here.
 
@@ -49,13 +50,15 @@ def fazer_login(request):
     if request.method == 'POST':
         dados = json.loads(request.body)
         usuario = authenticate(username=dados.get('username'), password=dados.get('password'))
+        token = gerar_token(usuario)
         if usuario:
             return JsonResponse({
                 "mensagem": "Login Feito UwU!", 
                 "id": usuario.id, 
                 "username": usuario.username, 
                 "avatar": usuario.foto_perfil, 
-                "biografia": usuario.biografia 
+                "biografia": usuario.biografia,
+                "token": token
                 }, status=200)
         else:
             return JsonResponse({"mensagem": "Credenciais inválidas >_<!"}, status=401)
